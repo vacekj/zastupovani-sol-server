@@ -1,0 +1,5 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Nodemon" type="NodeJSConfigurationType" node-parameters="C:\Users\vacek\AppData\Roaming\npm\node_modules\nodemon\bin\nodemon.js" path-to-js-file="bin/www" working-dir="$PROJECT_DIR$">
+    <method v="2" />
+  </configuration>
+</component>
