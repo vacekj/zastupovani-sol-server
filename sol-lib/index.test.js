@@ -47,6 +47,17 @@ test("Doesn't get suplovani of nonexistent date", async () => {
 		.toBeInstanceOf(sollib.DateNotFoundError);
 }, 20 * 1000);
 
+test("Parses suplovani table", async () => {
+	try {
+		const login = await sollib.login(browser, "gytool_externisti_Vacek", "Prvni_prihlaseni_45");
+		const suplovani = await sollib.getSuplovani(login.browser, "4.9.2019");
+		const parsedSuplovani = sollib.parseSuplovani(suplovani.suplovaniTable);
+	} catch (e) {
+		throw e;
+	}
+
+}, 20 * 1000);
+
 afterEach(() => {
 	return browser.close();
 });

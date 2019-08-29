@@ -2,6 +2,8 @@
 
 const puppeteer = require("puppeteer");
 
+const { parseTable } = require("./parsing");
+
 /**
  *
  * @returns {Promise<Browser>}
@@ -11,38 +13,6 @@ function launchBrowser() {
 		.launch({
 			headless: false
 		});
-}
-
-/**
- *
- * @param {Browser} browser
- * @param {string} date
- * @returns {Promise<{browser: Browser, error: Error|null, fetchDate?: string}>}
- */
-async function getSuplovani(browser, date) {
-	try {
-		const page = (await browser.pages())[0];
-		await page.goto("https://aplikace.skolaonline.cz/SOL/App/Rozvrh/KSU016_SuplovaniVypis.aspx");
-		await page.waitFor("#ctl00_main_DBDatum_wdcDatum_input");
-		await page.evaluate(`
-		document.querySelector("#ctl00_main_DBDatum_wdcDatum_input").value = "${date}";`);
-		await page.click("#ctl00_main_DBDatum_wdcDatum_input"); /* Needed for input to defocus and update its text*/
-		await page.click("#ctl00_main_rbStudent");
-		await page.click("[name='ctl00$main$btnZobraz']");
-		await page.waitForNavigation();
-		if ((await page.$("#ctl00_main_DBDatum_CVDateValidator")) != null) {
-			return { browser, error: new DateNotFoundError() };
-		} else {
-			await page.waitForSelector("#ctl00_main_lblVypisDatum");
-			const fetchDate = await page.evaluate(`
-		document.querySelector("#ctl00_main_lblVypisDatum").innerHTML;
-		`);
-
-			return { browser, error: null, fetchDate };
-		}
-	} catch (e) {
-		return { browser, error: e };
-	}
 }
 
 /**
@@ -74,8 +44,53 @@ async function login(browser, username, password) {
 	}
 }
 
+/**
+ *
+ * @param {Browser} browser
+ * @param {string} date
+ * @returns {Promise<{browser: Browser, error: Error|null, fetchDate?: string, suplovaniTable?: HTMLTableElement}>}
+ */
+async function getSuplovani(browser, date) {
+	try {
+		const page = (await browser.pages())[0];
+		await page.goto("https://aplikace.skolaonline.cz/SOL/App/Rozvrh/KSU016_SuplovaniVypis.aspx");
+		await page.waitFor("#ctl00_main_DBDatum_wdcDatum_input");
+		await page.evaluate(`
+		document.querySelector("#ctl00_main_DBDatum_wdcDatum_input").value = "${date}";`);
+		await page.click("#ctl00_main_DBDatum_wdcDatum_input"); /* Needed for input to defocus and update its text*/
+		await page.click("#ctl00_main_rbStudent");
+		await page.click("[name='ctl00$main$btnZobraz']");
+		await page.waitForNavigation();
+
+		if ((await page.$("#ctl00_main_DBDatum_CVDateValidator")) != null) {
+			return { browser, error: new DateNotFoundError() };
+		} else {
+			await page.waitForSelector("#ctl00_main_lblVypisDatum");
+			const fetchDate = await page.evaluate(`
+		document.querySelector("#ctl00_main_lblVypisDatum").innerHTML;
+		`);/*#G_ctl00xmainxgridZaci*/
+			const suplovaniTable = await page.evaluate(`
+			document.querySelector("html").outerHTML`);
+
+			return { browser, error: null, fetchDate, suplovaniTable };
+		}
+
+	} catch (e) {
+		return { browser, error: e };
+	}
+}
+
+/**
+ *
+ * @param {HTMLTableElement} suplovaniTable
+ * @returns {Promise<void>}
+ */
+async function parseSuplovani(suplovaniTable) {
+	const parsed = parseTable(suplovaniTable);
+}
+
 class DateNotFoundError extends Error {
 
 }
 
-module.exports = { login, getSuplovani, launchBrowser, DateNotFoundError };
+module.exports = { login, getSuplovani, launchBrowser, parseSuplovani, DateNotFoundError };
