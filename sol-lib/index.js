@@ -6,30 +6,22 @@ const { parseTable } = require("./parsing");
 
 /**
  *
- * @returns {Promise<Browser>}
- */
-function launchBrowser() {
-	return puppeteer
-		.launch({
-			headless: false
-		});
-}
-
-/**
- *
  * @param {Browser} browser
  * @param username
  * @param password
  * @returns {Promise<{browser: Browser, error: Error|null, username?: string}>}
  */
-async function login(browser, username, password) {
-	const page = (await browser.pages())[0];
-	await page.goto("https://www.skolaonline.cz/Aktuality.aspx");
-	await page.type("#JmenoUzivatele", username);
-	await page.type("#HesloUzivatele", password);
-	await page.click("#dnn_ctr994_SOLLogin_btnODeslat");
-	/* TODO: handle failed login. search for selector #dnn_ctr994_SOLLogin_lblChybaPrihlaseni */
+async function login({ browser, LOL, password }) {
+	/* TODO: check for username and password */
 	try {
+		const page = (await browser.pages())[0];
+		await page.goto("https://www.skolaonline.cz/Aktuality.aspx");
+		await page.evaluate(`
+		document.querySelector("#JmenoUzivatele").value = "${LOL}";`);
+		await page.evaluate(`
+		document.querySelector("#HesloUzivatele").value = "${password}";`);
+		await page.click("#dnn_ctr994_SOLLogin_btnODeslat");
+		/* TODO: handle failed login. search for selector #dnn_ctr994_SOLLogin_lblChybaPrihlaseni */
 		await page.waitForNavigation();
 		await page.waitForSelector(".user", {
 			timeout: 2 * 1000
@@ -50,7 +42,7 @@ async function login(browser, username, password) {
  * @param {string} date
  * @returns {Promise<{browser: Browser, error: Error|null, fetchDate?: string, suplovaniTable?: HTMLTableElement}>}
  */
-async function getSuplovani(browser, date) {
+async function getSuplovaniPage(browser, date) {
 	try {
 		const page = (await browser.pages())[0];
 		await page.goto("https://aplikace.skolaonline.cz/SOL/App/Rozvrh/KSU016_SuplovaniVypis.aspx");
@@ -63,7 +55,7 @@ async function getSuplovani(browser, date) {
 		await page.waitForNavigation();
 
 		if ((await page.$("#ctl00_main_DBDatum_CVDateValidator")) != null) {
-			return { browser, error: new DateNotFoundError() };
+			return { browser, error: new DateNotFound() };
 		} else {
 			await page.waitForSelector("#ctl00_main_lblVypisDatum");
 			const fetchDate = await page.evaluate(`
@@ -74,7 +66,6 @@ async function getSuplovani(browser, date) {
 
 			return { browser, error: null, fetchDate, suplovaniTable };
 		}
-
 	} catch (e) {
 		return { browser, error: e };
 	}
@@ -85,12 +76,32 @@ async function getSuplovani(browser, date) {
  * @param {HTMLTableElement} suplovaniTable
  * @returns {Promise<void>}
  */
-async function parseSuplovani(suplovaniTable) {
-	const parsed = parseTable(suplovaniTable);
+function parseSuplovaniTable(suplovaniTable) {
+	return parseTable(suplovaniTable);
 }
 
-class DateNotFoundError extends Error {
+async function checkLoggedIn(browser) {
+	try {
+		const page = (await browser.pages())[0];
+		await page.waitForSelector(".user", {
+			timeout: 2 * 1000
+		});
+		const username =
+			await page.evaluate(`
+		document.querySelector(".username").innerHTML;
+		`);
+		return { browser, error: null, username };
+	} catch (e) {
+		return { browser, error: new UserNotLoggedIn(e) };
+	}
+}
+
+class DateNotFound extends Error {
 
 }
 
-module.exports = { login, getSuplovani, launchBrowser, parseSuplovani, DateNotFoundError };
+class UserNotLoggedIn extends Error {
+
+}
+
+module.exports = { login, checkLoggedIn, parseSuplovaniTable, getSuplovaniPage, DateNotFound };

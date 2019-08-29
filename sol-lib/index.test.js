@@ -1,4 +1,5 @@
 const sollib = require("./index");
+const { BrowserManager } = require("./browserManager");
 /* const { Browser, Page } = require("@types/puppeteer"); */
 
 /**
@@ -7,13 +8,18 @@ const sollib = require("./index");
 let browser;
 
 beforeEach(() => {
-	return sollib
+	const browserManager = new BrowserManager();
+	return browserManager
 		.launchBrowser()
 		.then(browserInstance => browser = browserInstance);
 });
 
 test("Logs in", async () => {
-	const result = await sollib.login(browser, "gytool_externisti_Vacek", "Prvni_prihlaseni_45");
+	const result = await sollib.login({
+		browser,
+		LOL: "gytool_externisti_Vacek",
+		password: "Prvni_prihlaseni_45"
+	});
 	expect(result.error)
 		.toEqual(null);
 	expect(typeof result.username)
@@ -51,7 +57,7 @@ test("Parses suplovani table", async () => {
 	try {
 		const login = await sollib.login(browser, "gytool_externisti_Vacek", "Prvni_prihlaseni_45");
 		const suplovani = await sollib.getSuplovani(login.browser, "4.9.2019");
-		const parsedSuplovani = sollib.parseSuplovani(suplovani.suplovaniTable);
+		const parsedSuplovani = sollib.parseSuplovaniTable(suplovani.suplovaniTable);
 	} catch (e) {
 		throw e;
 	}
