@@ -9,22 +9,11 @@ class BrowserManager {
 	async launchBrowser() {
 		const browser = await puppeteer
 			.launch({
-				headless: false
+				headless: true
 			});
 
 		process.env.PUPPETEER_WS_ENDPOINT = browser.wsEndpoint();
 		return { browser, error: null };
-	}
-
-	async getBrowser() {
-		try {
-			const browser = await puppeteer.connect({
-				browserWSEndpoint: process.env.PUPPETEER_WS_ENDPOINT
-			});
-			return { browser, error: null };
-		} catch (e) {
-			return { error: new BrowserConnectionError(e) };
-		}
 	}
 }
 
