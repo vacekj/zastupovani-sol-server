@@ -4,7 +4,7 @@ class BrowserManager {
 
 	/**
 	 *
-	 * @returns {Promise<Browser>}
+	 * @returns {Promise<{ browser, error }>}
 	 */
 	async launchBrowser() {
 		const browser = await puppeteer
@@ -13,6 +13,7 @@ class BrowserManager {
 			});
 
 		process.env.PUPPETEER_WS_ENDPOINT = browser.wsEndpoint();
+		return { browser, error: null };
 	}
 
 	async getBrowser() {

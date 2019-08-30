@@ -1,7 +1,5 @@
 /*const { Page, Browser } = require("@types/puppeteer");*/
 
-const puppeteer = require("puppeteer");
-
 const { parseTable } = require("./parsing");
 
 /**
@@ -84,7 +82,7 @@ async function checkLoggedIn(browser) {
 	try {
 		const page = (await browser.pages())[0];
 		await page.waitForSelector(".user", {
-			timeout: 2 * 1000
+			timeout: 5 * 1000
 		});
 		const username =
 			await page.evaluate(`

@@ -12,9 +12,15 @@ router.get('/', function (req, res) {
 });
 
 router.get('/suplovani', async (req, res) => {
-	const browserManager = new BrowserManager();
+
 	const date = req.query.date;
-	/* Check date exists */
+	if (!date.match(/[0-9]{1,2}\.[0-9]{1,2}\.[0-9]{4}/)) {
+		return res.json({
+			status: 403,
+			error: "Date malformed",
+			date
+		});
+	}
 	try {
 		const result = await getSuplovani(date);
 		return res.json({
@@ -24,9 +30,8 @@ router.get('/suplovani', async (req, res) => {
 	} catch (e) {
 		res.json({
 			status: 0,
-			error: e
+			error: JSON.stringify(e, Object.getOwnPropertyNames(e))
 		});
-		throw e;
 	}
 });
 
@@ -34,32 +39,24 @@ router.get('/suplovani', async (req, res) => {
 async function getSuplovani(date) {
 	try {
 		const browserManager = new BrowserManager();
-		let browser = await browserManager.getBrowser();
+		let browser = await browserManager.launchBrowser();
 
-		if (browser.error || !browser.browser) {
-			console.warn("Couldn't get browser. Launching browser and retrying");
-			await browserManager.launchBrowser();
+		const loginAttempt = await sollib.login({
+			browser: browser.browser,
+			LOL: "gytool_externisti_Vacek",
+			password: "Prvni_prihlaseni_45"
+		});
+		if (loginAttempt.error || !loginAttempt.username) {
+			console.warn("Couldn't log in. Retrying..");
 			return await getSuplovani(date);
-		}
-
-		const loggedIn = await sollib.checkLoggedIn(browser.browser);
-
-		if (loggedIn.error) {
-			console.warn("User not logged in, logging in..");
-			const loginAttempt = await sollib.login({
-				browser: browser.browser,
-				LOL: "gytool_externisti_Vacek",
-				password: "Prvni_prihlaseni_45"
-			});
-			if (loginAttempt.error || loginAttempt.username) {
-				console.warn("Couldn't log in. Retrying..");
-				return await getSuplovani(date);
-			}
 		}
 
 		const suplovaniPage = await sollib.getSuplovaniPage(browser.browser, date);
 
 		if (suplovaniPage.error) {
+			if (suplovaniPage.error instanceof sollib.DateNotFound) {
+				throw suplovaniPage.error;
+			}
 			console.warn("Couldn't get suplovani page. Retrying..");
 			return await getSuplovani(date);
 		}
@@ -69,7 +66,7 @@ async function getSuplovani(date) {
 			console.warn("Couldn't parse suplovani page. Retrying..");
 			return await getSuplovani(date);
 		}
-
+		browser.browser.close();
 		return { parsedSuplovani, fetchDate: suplovaniPage.fetchDate };
 	} catch (e) {
 		throw e;
