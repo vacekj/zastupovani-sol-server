@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 
+const { format } = require("date-fns");
+
 const { BrowserManager } = require("../sol-lib/browserManager");
 const sollib = require("../sol-lib/index");
 
@@ -13,14 +15,18 @@ router.get('/', function (req, res) {
 
 router.get('/suplovani', async (req, res) => {
 
-	const date = req.query.date;
-	if (!date.match(/[0-9]{1,2}\.[0-9]{1,2}\.[0-9]{4}/)) {
+	let date = req.query.date;
+
+	if (date.length === 0) {
+		date = format(new Date(), "d.M.y");
+	} else if (!date.match(/[0-9]{1,2}\.[0-9]{1,2}\.[0-9]{4}/)) {
 		return res.json({
 			status: 403,
 			error: "Date malformed",
 			date
 		});
 	}
+
 	try {
 		const result = await getSuplovani(date);
 		return res.json({
@@ -43,8 +49,8 @@ async function getSuplovani(date) {
 
 		const loginAttempt = await sollib.login({
 			browser: browser.browser,
-			LOL: "gytool_externisti_Vacek",
-			password: "Prvni_prihlaseni_45"
+			LOL: process.env.SOL_USERNAME,
+			password: process.env.SOL_PASSWORD
 		});
 		if (loginAttempt.error || !loginAttempt.username) {
 			console.warn("Couldn't log in. Retrying..");

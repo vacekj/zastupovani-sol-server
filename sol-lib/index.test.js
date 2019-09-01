@@ -7,18 +7,23 @@ const { BrowserManager } = require("./browserManager");
  */
 let browser;
 
+beforeAll(() => {
+	require("dotenv")
+		.config();
+});
+
 beforeEach(() => {
 	const browserManager = new BrowserManager();
 	return browserManager
 		.launchBrowser()
-		.then(browserInstance => browser = browserInstance);
+		.then(browserInstance => browser = browserInstance.browser);
 });
 
 test("Logs in", async () => {
 	const result = await sollib.login({
 		browser,
-		LOL: "gytool_externisti_Vacek",
-		password: "Prvni_prihlaseni_45"
+		LOL: process.env.SOL_USERNAME,
+		password: process.env.SOL_PASSWORD
 	});
 	expect(result.error)
 		.toEqual(null);
@@ -29,15 +34,15 @@ test("Logs in", async () => {
 });
 
 test("Fails to log in with bogus credentials", async () => {
-	const result = await sollib.login(browser, "aaaaaaaaa", "bbbbbbbb");
+	const result = await sollib.login({ browser, LOL: "aaaaaaaaa", password: "bbbbbbbb" });
 	expect(result.error)
 		.not
 		.toBe(null);
 }, 10 * 1000);
 
 test("Gets Suplovani", async () => {
-	const login = await sollib.login(browser, "gytool_externisti_Vacek", "Prvni_prihlaseni_45");
-	const suplovani = await sollib.getSuplovani(login.browser, "4.9.2019");
+	const login = await sollib.login({ browser, LOL: process.env.SOL_USERNAME, password: process.env.SOL_PASSWORD });
+	const suplovani = await sollib.getSuplovaniPage(login.browser, "4.9.2019");
 	expect(suplovani.error)
 		.toEqual(null);
 	expect(typeof suplovani.fetchDate)
@@ -47,17 +52,26 @@ test("Gets Suplovani", async () => {
 }, 20 * 1000);
 
 test("Doesn't get suplovani of nonexistent date", async () => {
-	const login = await sollib.login(browser, "gytool_externisti_Vacek", "Prvni_prihlaseni_45");
-	const suplovani = await sollib.getSuplovani(login.browser, "1.1.2000");
+	const login = await sollib.login({ browser, LOL: process.env.SOL_USERNAME, password: process.env.SOL_PASSWORD });
+	const suplovani = await sollib.getSuplovaniPage(login.browser, "1.1.2000");
 	expect(suplovani.error)
-		.toBeInstanceOf(sollib.DateNotFoundError);
+		.toBeInstanceOf(sollib.DateNotFound);
 }, 20 * 1000);
 
-test("Parses suplovani table", async () => {
+test("Parses suplovani table", async (done) => {
 	try {
-		const login = await sollib.login(browser, "gytool_externisti_Vacek", "Prvni_prihlaseni_45");
-		const suplovani = await sollib.getSuplovani(login.browser, "4.9.2019");
+		const login = await sollib.login({
+			browser,
+			LOL: process.env.SOL_USERNAME,
+			password: process.env.SOL_PASSWORD
+		});
+		const suplovani = await sollib.getSuplovaniPage(login.browser, "4.9.2019");
 		const parsedSuplovani = sollib.parseSuplovaniTable(suplovani.suplovaniTable);
+		expect(parsedSuplovani)
+			.toBeInstanceOf(Array);
+		expect(parsedSuplovani.length)
+			.toBeGreaterThan(0);
+		done();
 	} catch (e) {
 		throw e;
 	}

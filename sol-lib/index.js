@@ -48,7 +48,7 @@ async function getSuplovaniPage(browser, date) {
 		await page.evaluate(`
 		document.querySelector("#ctl00_main_DBDatum_wdcDatum_input").value = "${date}";`);
 		await page.click("#ctl00_main_DBDatum_wdcDatum_input"); /* Needed for input to defocus and update its text*/
-		await page.click("#ctl00_main_rbStudent");
+		await page.click("label[for='ctl00_main_rbStudent']");
 		await page.click("[name='ctl00$main$btnZobraz']");
 		await page.waitForNavigation();
 
@@ -78,28 +78,8 @@ function parseSuplovaniTable(suplovaniTable) {
 	return parseTable(suplovaniTable);
 }
 
-async function checkLoggedIn(browser) {
-	try {
-		const page = (await browser.pages())[0];
-		await page.waitForSelector(".user", {
-			timeout: 5 * 1000
-		});
-		const username =
-			await page.evaluate(`
-		document.querySelector(".username").innerHTML;
-		`);
-		return { browser, error: null, username };
-	} catch (e) {
-		return { browser, error: new UserNotLoggedIn(e) };
-	}
-}
-
 class DateNotFound extends Error {
 
 }
 
-class UserNotLoggedIn extends Error {
-
-}
-
-module.exports = { login, checkLoggedIn, parseSuplovaniTable, getSuplovaniPage, DateNotFound };
+module.exports = { login, parseSuplovaniTable, getSuplovaniPage, DateNotFound };

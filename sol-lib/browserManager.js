@@ -9,16 +9,10 @@ class BrowserManager {
 	async launchBrowser() {
 		const browser = await puppeteer
 			.launch({
-				headless: true
+				headless: process.env.NODE_ENV == "development" ? false : true
 			});
-
-		process.env.PUPPETEER_WS_ENDPOINT = browser.wsEndpoint();
 		return { browser, error: null };
 	}
-}
-
-class BrowserConnectionError extends Error {
-
 }
 
 module.exports = { BrowserManager };
