@@ -9,6 +9,7 @@
     "coverage": "jest --coverage"
   },
   "dependencies": {
+    "@sentry/node": "^5.6.2",
     "cheerio": "^1.0.0-rc.3",
     "cors": "^2.8.5",
     "cross-env": "^5.2.1",
