@@ -9,6 +9,9 @@ const apiRouter = require('./routes/api');
 
 const app = express();
 
+require("dotenv")
+	.config();
+
 app.use(cors());
 app.use(logger('dev'));
 app.use(express.json());

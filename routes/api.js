@@ -54,6 +54,8 @@ async function getSuplovani(date) {
 		});
 		if (loginAttempt.error || !loginAttempt.username) {
 			console.warn("Couldn't log in. Retrying..");
+			await browser.browser.close();
+			await sleep(1000);
 			return await getSuplovani(date);
 		}
 
@@ -64,20 +66,29 @@ async function getSuplovani(date) {
 				throw suplovaniPage.error;
 			}
 			console.warn("Couldn't get suplovani page. Retrying..");
+			await browser.browser.close();
+			await sleep(1000);
 			return await getSuplovani(date);
 		}
 
 		const parsedSuplovani = sollib.parseSuplovaniTable(suplovaniPage.suplovaniTable);
 		if (!parsedSuplovani) {
 			console.warn("Couldn't parse suplovani page. Retrying..");
+			await browser.browser.close();
+			await sleep(1000);
 			return await getSuplovani(date);
 		}
-		browser.browser.close();
+		await browser.browser.close();
 		return { parsedSuplovani, fetchDate: suplovaniPage.fetchDate };
 	} catch (e) {
 		throw e;
 	}
 }
 
+async function sleep(ms) {
+	return new Promise(resolve => {
+		setTimeout(resolve, ms);
+	});
+}
 
 module.exports = router;

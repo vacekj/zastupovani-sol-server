@@ -31,7 +31,7 @@ test("Logs in", async () => {
 		.toBe("string");
 	expect(result.username.length)
 		.toBeGreaterThan(0);
-});
+}, 10 * 1000);
 
 test("Fails to log in with bogus credentials", async () => {
 	const result = await sollib.login({ browser, LOL: "aaaaaaaaa", password: "bbbbbbbb" });
