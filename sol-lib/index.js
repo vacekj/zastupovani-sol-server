@@ -10,7 +10,9 @@ const { parseTable } = require("./parsing");
  * @returns {Promise<{browser: Browser, error: Error|null, username?: string}>}
  */
 async function login({ browser, LOL, password }) {
-	/* TODO: check for username and password */
+	if (!LOL || !password) {
+		throw new NoUserPass("No username or password was provided.");
+	}
 	try {
 		const page = (await browser.pages())[0];
 		await page.goto("https://www.skolaonline.cz/Aktuality.aspx");
@@ -79,6 +81,10 @@ function parseSuplovaniTable(suplovaniTable) {
 }
 
 class DateNotFound extends Error {
+
+}
+
+class NoUserPass extends Error {
 
 }
 
