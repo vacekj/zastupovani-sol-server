@@ -3,8 +3,7 @@ const router = express.Router();
 
 const { format } = require("date-fns");
 
-const { BrowserManager } = require("../sol-lib/browserManager");
-const sollib = require("../sol-lib/index");
+const fs = require("fs");
 
 router.get('/', function (req, res) {
 	res.json({
@@ -13,7 +12,7 @@ router.get('/', function (req, res) {
 	});
 });
 
-router.get('/suplovani', async (req, res) => {
+router.get('/suplovani', (req, res) => {
 
 	let date = req.query.date;
 
@@ -21,74 +20,24 @@ router.get('/suplovani', async (req, res) => {
 		date = format(new Date(), "d.M.y");
 	} else if (!date.match(/[0-9]{1,2}\.[0-9]{1,2}\.[0-9]{4}/)) {
 		return res.json({
-			status: 403,
 			error: "Date malformed",
 			date
-		});
+		})
+			.status(400);
 	}
 
-	try {
-		const result = await getSuplovani(date);
+	const path = `C:/solapi/${date}.txt`;
+
+	if (!fs.existsSync(path)) {
 		return res.json({
-			status: 200,
-			data: result
-		});
-	} catch (e) {
-		res.json({
-			status: 0,
-			error: JSON.stringify(e, Object.getOwnPropertyNames(e))
-		});
+			error: "Date not found",
+			date
+		})
+			.status(404);
 	}
+	const rawData = fs.readFileSync(path, { encoding: "utf-8" });
+	const suplovani = JSON.parse(rawData);
+	return res.json(suplovani);
 });
-
-
-async function getSuplovani(date) {
-	try {
-		const browserManager = new BrowserManager();
-		let browser = await browserManager.launchBrowser();
-
-		const loginAttempt = await sollib.login({
-			browser: browser.browser,
-			LOL: process.env.SOL_USERNAME,
-			password: process.env.SOL_PASSWORD
-		});
-		if (loginAttempt.error || !loginAttempt.username) {
-			console.warn("Couldn't log in. Retrying..");
-			await browser.browser.close();
-			await sleep(1000);
-			return await getSuplovani(date);
-		}
-
-		const suplovaniPage = await sollib.getSuplovaniPage(browser.browser, date);
-
-		if (suplovaniPage.error) {
-			if (suplovaniPage.error instanceof sollib.DateNotFound) {
-				throw suplovaniPage.error;
-			}
-			console.warn("Couldn't get suplovani page. Retrying..");
-			await browser.browser.close();
-			await sleep(1000);
-			return await getSuplovani(date);
-		}
-
-		const parsedSuplovani = sollib.parseSuplovaniTable(suplovaniPage.suplovaniTable);
-		if (!parsedSuplovani) {
-			console.warn("Couldn't parse suplovani page. Retrying..");
-			await browser.browser.close();
-			await sleep(1000);
-			return await getSuplovani(date);
-		}
-		await browser.browser.close();
-		return { parsedSuplovani, fetchDate: suplovaniPage.fetchDate };
-	} catch (e) {
-		throw e;
-	}
-}
-
-async function sleep(ms) {
-	return new Promise(resolve => {
-		setTimeout(resolve, ms);
-	});
-}
 
 module.exports = router;
