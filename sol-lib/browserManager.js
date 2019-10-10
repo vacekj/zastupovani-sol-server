@@ -9,7 +9,9 @@ class BrowserManager {
 	async launchBrowser() {
 		const browser = await puppeteer
 			.launch({
-				headless: process.env.NODE_ENV === "development" ? false : true
+				headless: process.env.NODE_ENV !== "development",
+				args: ['--disable-setuid-sandbox',
+					'--no-zygote']
 			});
 		return { browser, error: null };
 	}
