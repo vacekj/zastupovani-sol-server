@@ -11,7 +11,8 @@ class BrowserManager {
 			.launch({
 				headless: process.env.NODE_ENV !== "development",
 				args: ['--disable-setuid-sandbox',
-					'--no-zygote']
+					'--no-zygote'],
+				userDataDir: "C:\etc\pup"
 			});
 		return { browser, error: null };
 	}
